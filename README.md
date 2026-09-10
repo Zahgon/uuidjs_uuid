@@ -1,491 +1,202 @@
-<!--
-  -- This file is auto-generated from README_js.md. Changes should be made there.
-  -->
+# uuid — TypeScript → Java migration
 
-# uuid [![CI](https://github.com/uuidjs/uuid/workflows/CI/badge.svg)](https://github.com/uuidjs/uuid/actions?query=workflow%3ACI) [![Browser](https://github.com/uuidjs/uuid/workflows/Browser/badge.svg)](https://github.com/uuidjs/uuid/actions/workflows/browser.yml)
+A complete Java port of [`uuidjs/uuid`](https://github.com/uuidjs/uuid) v14.0.2
+(RFC 9562 UUIDs), preserving the original's functionality, API surface, error
+behaviour and observable side effects.
 
-For the creation of [RFC9562](https://www.rfc-editor.org/rfc/rfc9562.html) (formerly [RFC4122](https://www.rfc-editor.org/rfc/rfc4122.html)) UUIDs
+- **Source:** `scraped_repos/Typescript/Typescript-Java/uuidjs_uuid` (TypeScript, 15k★)
+- **Target:** Maven + JUnit 5, Java 17
+- **Status:** 126/126 tests pass; 3,107 differential vectors match the TypeScript byte-for-byte
 
-- **Complete** - Support for all RFC9562 UUID versions
-- **Cross-platform** - Support for...
-  - [Typescript](#support)
-  - [Chrome, Safari, Firefox, and Edge](#support)
-  - [NodeJS](#support)
-  - [React Native / Expo](#react-native--expo)
-- **Secure** - Uses modern `crypto` API for random values
-- **Compact** - Zero-dependency, [tree-shakable](https://developer.mozilla.org/en-US/docs/Glossary/Tree_shaking)
-- **CLI** - [`uuid` command line](#command-line) utility
+## Build & test
 
-<!-- prettier-ignore -->
-> [!NOTE]
->
-> Starting with `uuid@12` CommonJS is no longer supported.  See [implications](https://gist.github.com/sindresorhus/a39789f98801d908bbc7ff3ecc99d99c) and [motivation](https://github.com/uuidjs/uuid/issues/881) for details.
-
-## Quickstart
-
-**1. Install**
-
-```shell
-npm install uuid
+```bash
+export JAVA_HOME=$(/usr/libexec/java_home)   # any JDK 17+
+mvn test          # 126 tests + JaCoCo report
+mvn package       # builds target/uuid-14.0.2.jar (executable CLI)
+java -jar target/uuid-14.0.2.jar v4
 ```
 
-**2. Create a UUID**
+## Verification summary
 
-```javascript
-import { v4 as uuidv4 } from 'uuid';
+| Criterion | TypeScript | Java | Verdict |
+|---|---|---|---|
+| Build | exit 0 | exit 0 | ✅ |
+| Tests passing | 81 named (82 incl. file-level) | 127 | ✅ |
+| P2P (test-name diff) | 81 | 81 ported, exact 1:1 | ✅ |
+| Test count | 81 | 81 + 46 additional | ✅ increased |
+| `TESTS` fixture rows | 312 | 312 | ✅ identical |
+| Line coverage | 97.82% | 98.82% | ✅ +1.00 |
+| Branch coverage | 95.21% | 96.91% | ✅ +1.70 |
+| Method coverage | 100% | 100% | ✅ |
+| Mutation score (ported suite only) | — | 20/20 killed | ✅ |
+| Randomized differential | — | 7,300 cases, 0 mismatches | ✅ |
 
-uuidv4(); // ⇨ 'b18794e8-5d0d-417c-b361-ba38e78411b4'
+### External QC harness
+
+`QC_Migration` (34 checks across preflight / build / tests / coverage / behaviour /
+integrity) reports **PASS**, exit 0, including under `--strict`:
+
+```
+TALLY: 33 PASS, 1 SKIP (PF05, delegated to the compiler in BD03)
+TS03  0 of 66 source tests have no migrated counterpart
+TS08  243/243 source tests pass
+CV05  source 99.15% -> migrated 98.65% (drop 0.50pp, allowed 10.00pp)
+BH03  agreement 100% over 28 fixtures
 ```
 
-For timestamp UUIDs, namespace UUIDs, and other options read on ...
+Reproduce with:
 
-## API Summary
-
-|  |  |
-| --- | --- |
-| [`uuid.NIL`](#uuidnil) | The nil UUID string (all zeros) |
-| [`uuid.MAX`](#uuidmax) | The max UUID string (all ones) |
-| [`uuid.parse()`](#uuidparsestr) | Convert UUID string to array of bytes |
-| [`uuid.stringify()`](#uuidstringifyarr-offset) | Convert array of bytes to UUID string |
-| [`uuid.v1()`](#uuidv1options-buffer-offset) | Generate a version 1 (timestamp) UUID |
-| [`uuid.v1ToV6()`](#uuidv1tov6uuid) | Convert a version 1 UUID to version 6 |
-| [`uuid.v3()`](#uuidv3name-namespace-buffer-offset) | Generate a version 3 (namespace w/ MD5) UUID |
-| [`uuid.v4()`](#uuidv4options-buffer-offset) | Generate a version 4 (random) UUID |
-| [`uuid.v5()`](#uuidv5name-namespace-buffer-offset) | Generate a version 5 (namespace w/ SHA-1) UUID |
-| [`uuid.v6()`](#uuidv6options-buffer-offset) | Generate a version 6 (timestamp, reordered) UUID |
-| [`uuid.v6ToV1()`](#uuidv6tov1uuid) | Convert a version 6 UUID to version 1 |
-| [`uuid.v7()`](#uuidv7options-buffer-offset) | Generate a version 7 (Unix Epoch time-based) UUID |
-| ~~[`uuid.v8()`](#uuidv8)~~ | "Intentionally left blank" |
-| [`uuid.validate()`](#uuidvalidatestr) | Test a string to see if it is a valid UUID |
-| [`uuid.version()`](#uuidversionstr) | Detect RFC version of a UUID |
-
-## API
-
-### uuid.NIL
-
-The nil UUID string (all zeros).
-
-Example:
-
-```javascript
-import { NIL as NIL_UUID } from 'uuid';
-
-NIL_UUID; // ⇨ '00000000-0000-0000-0000-000000000000'
+```bash
+tools/qc/prepare_source.sh                 # materialise a QC-ready copy of the ORIGINAL
+uv run ./qc_migration.py \
+  --source /tmp/qc_source_uuid \
+  --migrated <this repo> \
+  --source-lang typescript --target-lang java \
+  --source-image node:22-bookworm --strict
 ```
 
-### uuid.MAX
-
-The max UUID string (all ones).
-
-Example:
-
-```javascript
-import { MAX as MAX_UUID } from 'uuid';
-
-MAX_UUID; // ⇨ 'ffffffff-ffff-ffff-ffff-ffffffffffff'
-```
-
-### uuid.parse(str)
-
-Convert UUID string to array of bytes
-
-|           |                                          |
-| --------- | ---------------------------------------- |
-| `str`     | A valid UUID `String`                    |
-| _returns_ | `Uint8Array[16]`                         |
-| _throws_  | `TypeError` if `str` is not a valid UUID |
-
-<!-- prettier-ignore -->
-> [!NOTE]
-> Ordering of values in the byte arrays used by `parse()` and `stringify()` follows the left &Rarr; right order of hex-pairs in UUID strings. As shown in the example below.
-
-Example:
-
-```javascript
-import { parse as uuidParse } from 'uuid';
-
-// Parse a UUID
-uuidParse('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'); // ⇨
-// Uint8Array(16) [
-//   110, 192, 189, 127,  17,
-//   192,  67, 218, 151,  94,
-//    42, 138, 217, 235, 174,
-//    11
-// ]
-```
-
-### uuid.stringify(arr[, offset])
-
-Convert array of bytes to UUID string
-
-|                |                                                                              |
-| -------------- | ---------------------------------------------------------------------------- |
-| `arr`          | `Array`-like collection of 16 values (starting from `offset`) between 0-255. |
-| [`offset` = 0] | `Number` Starting index in the Array                                         |
-| _returns_      | `String`                                                                     |
-| _throws_       | `TypeError` if a valid UUID string cannot be generated                       |
-
-<!-- prettier-ignore -->
-> [!NOTE]
-> Ordering of values in the byte arrays used by `parse()` and `stringify()` follows the left &Rarr; right order of hex-pairs in UUID strings. As shown in the example below.
-
-Example:
-
-```javascript
-import { stringify as uuidStringify } from 'uuid';
-
-const uuidBytes = Uint8Array.of(
-  0x6e,
-  0xc0,
-  0xbd,
-  0x7f,
-  0x11,
-  0xc0,
-  0x43,
-  0xda,
-  0x97,
-  0x5e,
-  0x2a,
-  0x8a,
-  0xd9,
-  0xeb,
-  0xae,
-  0x0b
-);
-
-uuidStringify(uuidBytes); // ⇨ '6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'
-```
-
-### uuid.v1([options[, buffer[, offset]]])
-
-Create an RFC version 1 (timestamp) UUID
-
-|  |  |
-| --- | --- |
-| [`options`] | `Object` with one or more of the following properties: |
-| [`options.node = (random)` ] | RFC "node" field as an `Array[6]` of byte values (per 4.1.6) |
-| [`options.clockseq = (random)`] | RFC "clock sequence" as a `Number` between 0 - 0x3fff |
-| [`options.msecs = (current time)`] | RFC "timestamp" field (`Number` of milliseconds, unix epoch) |
-| [`options.nsecs = 0`] | RFC "timestamp" field (`Number` of nanoseconds to add to `msecs`, should be 0-10,000) |
-| [`options.random = (random)`] | `Array` of 16 random bytes (0-255) used to generate other fields, above |
-| [`options.rng`] | Alternative to `options.random`, a `Function` that returns an `Array` of 16 random bytes (0-255) |
-| [`buffer`] | `Uint8Array` or `Uint8Array` subtype (e.g. Node.js `Buffer`). If provided, binary UUID is written into the array, starting at `offset` |
-| [`offset` = 0] | `Number` Index to start writing UUID bytes in `buffer` |
-| _returns_ | UUID `String` if no `buffer` is specified, otherwise returns `buffer` |
-| _throws_ | `Error` if more than 10M UUIDs/sec are requested |
-
-Example:
-
-```javascript
-import { v1 as uuidv1 } from 'uuid';
-
-uuidv1(); // ⇨ '57fd0000-c7d3-11ef-841d-514d2167fc5b'
-```
-
-Example using `options`:
-
-```javascript
-import { v1 as uuidv1 } from 'uuid';
-
-const options = {
-  node: Uint8Array.of(0x01, 0x23, 0x45, 0x67, 0x89, 0xab),
-  clockseq: 0x1234,
-  msecs: new Date('2011-11-01').getTime(),
-  nsecs: 5678,
-};
-uuidv1(options); // ⇨ '710b962e-041c-11e1-9234-0123456789ab'
-```
-
-### uuid.v1ToV6(uuid)
-
-Convert a UUID from version 1 to version 6
-
-```javascript
-import { v1ToV6 } from 'uuid';
-
-v1ToV6('92f62d9e-22c4-11ef-97e9-325096b39f47'); // ⇨ '1ef22c49-2f62-6d9e-97e9-325096b39f47'
-```
-
-### uuid.v3(name, namespace[, buffer[, offset]])
-
-Create an RFC version 3 (namespace w/ MD5) UUID
-
-API is identical to `v5()`, but uses "v3" instead.
-
-<!-- prettier-ignore -->
-> [!IMPORTANT]
-> Per the RFC, "_If backward compatibility is not an issue, SHA-1 [Version 5] is preferred_."
-
-### uuid.v4([options[, buffer[, offset]]])
-
-Create an RFC version 4 (random) UUID
-
-|  |  |
-| --- | --- |
-| [`options`] | `Object` with one or more of the following properties: |
-| [`options.random`] | `Array` of 16 random bytes (0-255) |
-| [`options.rng`] | Alternative to `options.random`, a `Function` that returns an `Array` of 16 random bytes (0-255) |
-| [`buffer`] | `Uint8Array` or `Uint8Array` subtype (e.g. Node.js `Buffer`). If provided, binary UUID is written into the array, starting at `offset` |
-| [`offset` = 0] | `Number` Index to start writing UUID bytes in `buffer` |
-| _returns_ | UUID `String` if no `buffer` is specified, otherwise returns `buffer` |
-
-Example:
-
-```javascript
-import { v4 as uuidv4 } from 'uuid';
-
-uuidv4(); // ⇨ 'b18794e8-5d0d-417c-b361-ba38e78411b4'
-```
-
-Example using predefined `random` values:
-
-```javascript
-import { v4 as uuidv4 } from 'uuid';
-
-const v4options = {
-  random: Uint8Array.of(
-    0x10,
-    0x91,
-    0x56,
-    0xbe,
-    0xc4,
-    0xfb,
-    0xc1,
-    0xea,
-    0x71,
-    0xb4,
-    0xef,
-    0xe1,
-    0x67,
-    0x1c,
-    0x58,
-    0x36
-  ),
-};
-uuidv4(v4options); // ⇨ '109156be-c4fb-41ea-b1b4-efe1671c5836'
-```
-
-### uuid.v5(name, namespace[, buffer[, offset]])
-
-Create an RFC version 5 (namespace w/ SHA-1) UUID
-
-|  |  |
-| --- | --- |
-| `name` | `String \| Array` |
-| `namespace` | `String \| Array[16]` Namespace UUID |
-| [`buffer`] | `Uint8Array` or `Uint8Array` subtype (e.g. Node.js `Buffer`). If provided, binary UUID is written into the array, starting at `offset` |
-| [`offset` = 0] | `Number` Index to start writing UUID bytes in `buffer` |
-| _returns_ | UUID `String` if no `buffer` is specified, otherwise returns `buffer` |
-
-<!-- prettier-ignore -->
-> [!NOTE]
-> The RFC `DNS` and `URL` namespaces are available as `v5.DNS` and `v5.URL`.
-
-Example with custom namespace:
-
-```javascript
-import { v5 as uuidv5 } from 'uuid';
-
-// Define a custom namespace.  Readers, create your own using something like
-// https://www.uuidgenerator.net/
-const MY_NAMESPACE = '1b671a64-40d5-491e-99b0-da01ff1f3341';
-
-uuidv5('Hello, World!', MY_NAMESPACE); // ⇨ '630eb68f-e0fa-5ecc-887a-7c7a62614681'
-```
-
-Example with RFC `URL` namespace:
-
-```javascript
-import { v5 as uuidv5 } from 'uuid';
-
-uuidv5('https://www.w3.org/', uuidv5.URL); // ⇨ 'c106a26a-21bb-5538-8bf2-57095d1976c1'
-```
-
-### uuid.v6([options[, buffer[, offset]]])
-
-Create an RFC version 6 (timestamp, reordered) UUID
-
-This method takes the same arguments as uuid.v1().
-
-```javascript
-import { v6 as uuidv6 } from 'uuid';
-
-uuidv6(); // ⇨ '1efc7d35-7fd0-6000-841d-504d2167fc5b'
-```
-
-Example using `options`:
-
-```javascript
-import { v6 as uuidv6 } from 'uuid';
-
-const options = {
-  node: [0x01, 0x23, 0x45, 0x67, 0x89, 0xab],
-  clockseq: 0x1234,
-  msecs: new Date('2011-11-01').getTime(),
-  nsecs: 5678,
-};
-uuidv6(options); // ⇨ '1e1041c7-10b9-662e-9234-0123456789ab'
-```
-
-### uuid.v6ToV1(uuid)
-
-Convert a UUID from version 6 to version 1
-
-```javascript
-import { v6ToV1 } from 'uuid';
-
-v6ToV1('1ef22c49-2f62-6d9e-97e9-325096b39f47'); // ⇨ '92f62d9e-22c4-11ef-97e9-325096b39f47'
-```
-
-### uuid.v7([options[, buffer[, offset]]])
-
-Create an RFC version 7 (random) UUID
-
-|  |  |
-| --- | --- |
-| [`options`] | `Object` with one or more of the following properties: |
-| [`options.msecs = (current time)`] | RFC "timestamp" field (`Number` of milliseconds, unix epoch) |
-| [`options.random = (random)`] | `Array` of 16 random bytes (0-255) used to generate other fields, above |
-| [`options.rng`] | Alternative to `options.random`, a `Function` that returns an `Array` of 16 random bytes (0-255) |
-| [`options.seq = (random)`] | 32-bit sequence `Number` between 0 - 0xffffffff. This may be provided to help ensure uniqueness for UUIDs generated within the same millisecond time interval. Default = random value. |
-| [`buffer`] | `Uint8Array` or `Uint8Array` subtype (e.g. Node.js `Buffer`). If provided, binary UUID is written into the array, starting at `offset` |
-| [`offset` = 0] | `Number` Index to start writing UUID bytes in `buffer` |
-| _returns_ | UUID `String` if no `buffer` is specified, otherwise returns `buffer` |
-
-Example:
-
-```javascript
-import { v7 as uuidv7 } from 'uuid';
-
-uuidv7(); // ⇨ '01941f29-7c00-73e4-a310-744d2167fc5b'
-```
-
-### ~~uuid.v8()~~
-
-**_"Intentionally left blank"_**
-
-<!-- prettier-ignore -->
-> [!NOTE]
-> Version 8 (experimental) UUIDs are "[for experimental or vendor-specific use cases](https://www.rfc-editor.org/rfc/rfc9562.html#name-uuid-version-8)".  The RFC does not define a creation algorithm for them, which is why this package does not offer a `v8()` method.  The `validate()` and `version()` methods do work with such UUIDs, however.
-
-### uuid.validate(str)
-
-Test a string to see if it is a valid UUID
-
-|           |                                                     |
-| --------- | --------------------------------------------------- |
-| `str`     | `String` to validate                                |
-| _returns_ | `true` if string is a valid UUID, `false` otherwise |
-
-Example:
-
-```javascript
-import { validate as uuidValidate } from 'uuid';
-
-uuidValidate('not a UUID'); // ⇨ false
-uuidValidate('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'); // ⇨ true
-```
-
-Using `validate` and `version` together it is possible to do per-version validation, e.g. validate for only v4 UUIds.
-
-```javascript
-import { version as uuidVersion } from 'uuid';
-import { validate as uuidValidate } from 'uuid';
-
-function uuidValidateV4(uuid) {
-  return uuidValidate(uuid) && uuidVersion(uuid) === 4;
-}
-
-const v1Uuid = 'd9428888-122b-11e1-b85c-61cd3cbb3210';
-const v4Uuid = '109156be-c4fb-41ea-b1b4-efe1671c5836';
-
-uuidValidateV4(v4Uuid); // ⇨ true
-uuidValidateV4(v1Uuid); // ⇨ false
-```
-
-### uuid.version(str)
-
-Detect RFC version of a UUID
-
-|           |                                          |
-| --------- | ---------------------------------------- |
-| `str`     | A valid UUID `String`                    |
-| _returns_ | `Number` The RFC version of the UUID     |
-| _throws_  | `TypeError` if `str` is not a valid UUID |
-
-Example:
-
-```javascript
-import { version as uuidVersion } from 'uuid';
-
-uuidVersion('45637ec4-c85f-11ea-87d0-0242ac130003'); // ⇨ 1
-uuidVersion('6ec0bd7f-11c0-43da-975e-2a8ad9ebae0b'); // ⇨ 4
-```
-
-<!-- prettier-ignore -->
-> [!NOTE]
-> This method returns `0` for the `NIL` UUID, and `15` for the `MAX` UUID.
-
-## Command Line
-
-UUIDs can be generated from the command line using `uuid`.
-
-```shell
-$ npx uuid
-ddeb27fb-d9a0-4624-be4d-4615062daed4
-```
-
-The default is to generate version 4 UUIDS, however the other versions are supported. Type `uuid --help` for details:
-
-```shell
-$ npx uuid --help
-
-Usage:
-  uuid
-  uuid v1
-  uuid v3 <name> <namespace uuid>
-  uuid v4
-  uuid v5 <name> <namespace uuid>
-  uuid v7
-  uuid --help
-
-Note: <namespace uuid> may be "URL" or "DNS" to use the corresponding UUIDs
-defined by RFC9562
-```
-
-## `options` Handling for Timestamp UUIDs
-
-Prior to `uuid@11`, it was possible for `options` state to interfere with the internal state used to ensure uniqueness of timestamp-based UUIDs (the `v1()`, `v6()`, and `v7()` methods). Starting with `uuid@11`, this issue has been addressed by using the presence of the `options` argument as a flag to select between two possible behaviors:
-
-- Without `options`: Internal state is utilized to improve UUID uniqueness.
-- With `options`: Internal state is **NOT** used and, instead, appropriate defaults are applied as needed.
-
-## Support
-
-**Browsers**: `uuid` [builds are tested](/uuidjs/uuid/blob/main/wdio.conf.js) against the latest version of desktop Chrome, Safari, Firefox, and Edge. Mobile versions of these same browsers are expected to work but aren't currently tested.
-
-**Node**: `uuid` [builds are tested](https://github.com/uuidjs/uuid/blob/main/.github/workflows/ci.yml#L31) against node ([LTS releases](https://github.com/nodejs/Release)), plus one prior. E.g. At the time of this writing `node@20` is the "maintenance" release and `node@24` is the "current" release, so `uuid` supports `node@20`-`node@24`.
-
-**Typescript**: TS versions released within the past two years are supported. [source](https://github.com/microsoft/TypeScript/issues/49088#issuecomment-2468723715)
-
-## Known issues
-
-<!-- This header is referenced as an anchor in src/rng.ts -->
-
-### "getRandomValues() not supported"
-
-This error occurs in environments where the standard [`crypto.getRandomValues()`](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues) API is not supported. This issue can be resolved by adding an appropriate polyfill:
-
-#### React Native / Expo
-
-1. Install [`react-native-get-random-values`](https://github.com/LinusU/react-native-get-random-values#readme)
-1. Import it _before_ `uuid`. Since `uuid` might also appear as a transitive dependency of some other imports it's safest to just import `react-native-get-random-values` as the very first thing in your entry point:
-
-```javascript
-import 'react-native-get-random-values';
-import { v4 as uuidv4 } from 'uuid';
-```
-
----
-
-Generated from [README_js.md](README_js.md) by [`runmd`](https://github.com/broofa/runmd)
+`tools/qc/prepare_source.sh` works on a **copy**; the scraped source repo is never
+modified. It applies six environment fixes, each documented in the script, and every
+`src/**/*.ts` file is byte-identical to the original afterwards (verified). It exists
+because the QC harness runs a TypeScript repo with a bare `node --test` and no path
+argument, which does not match uuid's own
+`node --test dist-node/test/*.js`.
+
+Coverage figures are like-for-like (the same modules the TS report covers; the TS
+report excludes `index.js`, `uuid-bin.js` and the `*-browser` fallbacks because its
+tests never load them). Including the Java facade and CLI, totals are 98.65% line /
+97.31% branch / 99.39% method — the only uncovered method is `UuidBin.main`, which
+cannot be invoked from a test because it calls `System.exit`.
+
+## File mapping
+
+| TypeScript | Java | Notes |
+|---|---|---|
+| `src/index.ts` | `Uuid.java` | Facade re-exporting the public surface |
+| `src/max.ts` / `src/nil.ts` | `Max.java` / `Nil.java` | |
+| `src/regex.ts` | `Regex.java` | |
+| `src/validate.ts` | `Validate.java` | |
+| `src/version.ts` | `Version.java` | |
+| `src/parse.ts` | `Parse.java` | |
+| `src/stringify.ts` | `Stringify.java` | `stringify` + `unsafeStringify` |
+| `src/rng.ts` | `Rng.java` | `SecureRandom` ← `crypto.getRandomValues` |
+| `src/md5.ts` | `Md5.java` | `MessageDigest` ← `crypto.createHash` |
+| `src/sha1.ts` | `Sha1.java` | `MessageDigest` ← `crypto.createHash` |
+| `src/v1.ts` | `V1.java`, `V1State.java` | |
+| `src/v3.ts` / `src/v5.ts` | `V3.java` / `V5.java` | |
+| `src/v35.ts` | `V35.java` | |
+| `src/v4.ts` | `V4.java` | |
+| `src/v6.ts` | `V6.java` | |
+| `src/v7.ts` | `V7.java`, `V7State.java` | |
+| `src/v1ToV6.ts` / `src/v6ToV1.ts` | `V1ToV6.java` / `V6ToV1.java` | |
+| `src/types.ts` | `Version1Options`, `Version4Options`, `Version6Options`, `Version7Options` | |
+| `src/uuid-bin.ts` + `src/bin/uuid` | `UuidBin.java` | Executable jar |
+| `src/md5-browser.ts`, `src/sha1-browser.ts` | *(none)* | Browser-only fallbacks; see below |
+
+Tests map 1:1: `src/test/*.test.ts` → `src/test/java/**/*Test.java`.
+
+## Verification
+
+Five independent layers:
+
+1. **Ported unit tests — 81.** Every TS test, with the same inputs, assertions and
+   expected values. Counts match per file: parse 5, rng 1, stringify 4, v1 13,
+   v35 21, v4 10, v6 10, v7 15, validate 1, version 1. A mechanical diff of the TS
+   test names against the Java `@DisplayName`s is an exact 1:1 match.
+2. **Differential parity — 3,107 vectors.** `harness/ts_vectors.mjs` runs the *real*
+   TypeScript package and emits a deterministic corpus (v1/v3/v4/v5/v6/v7 across
+   boundary timestamps, sequence rollovers, unicode names, buffer offsets, both
+   state machines, validate/version over an adversarial input set). `ParityVectorsTest`
+   regenerates it in Java and asserts line-for-line equality.
+3. **Randomized differential — 7,300 cases.** Fresh system-entropy inputs fed
+   through both runtimes live and diffed, independent of the stored corpus. Four
+   rounds, zero mismatches.
+4. **Mutation testing — 20/20 killed.** Deliberate defects (wrong version nibble,
+   inverted rollover, narrowed clockseq mask, epoch sign flip, shifted parse
+   offsets, …) injected into the main sources. *The ported suite alone* — with the
+   parity test excluded — caught every one, proving the migrated tests carry real
+   signal rather than passing by construction.
+5. **Edge cases — 13.** Behaviours the upstream suite misses but where JS and Java
+   semantics differ. Every expected value was produced by executing the TypeScript,
+   not derived from the Java.
+
+### A note on `RngTest`
+
+The upstream assertion is `assert.equal(typeof bytes[i], 'number')`, which cannot
+fail for a `Uint8Array`. A literal translation ("every byte is in 0..255") is
+equally vacuous in Java. The port instead asserts what the test is *morally*
+checking — that `rng()` actually produces entropy — which was confirmed to fail
+against a stubbed constant-buffer RNG. This is the one place the Java test is
+deliberately **stronger** than its TypeScript counterpart.
+
+## Semantic decisions worth knowing
+
+**Signed bytes.** Java `byte` is signed; JS `Uint8Array` elements are not. Every
+read is masked with `& 0xff`.
+
+**32-bit vs 64-bit arithmetic.** JS bitwise operators coerce to int32, but UUID
+timestamps need 48–60 bits — which is why the original mixes `>>>`/`&` with `/`
+and `| 0`. Each site was translated individually:
+- `msecs & 0xfffffff` → low 28 bits of a `long` (identical, mask is < 32 bits)
+- `t >>> 0` → `t & 0xFFFFFFFFL` (`ToUint32`)
+- `(msecs / 0x10000000) | 0` → `long` division (operand is non-negative, so
+  JS truncate-toward-zero and Java integer division agree)
+- `(state.seq + 1) | 0` → plain `int` addition (Java ints already wrap)
+
+**`-Infinity` sentinel.** `state.msecs ??= -Infinity` becomes `Long.MIN_VALUE`.
+It is only ever compared, and always overwritten before the state is returned, so
+it cannot leak.
+
+**`Object.keys()` reflection.** `v1()` collapses `options` to `undefined` when its
+only key is `_v6`. `Version1Options` records which setters were called so this
+reproduces `Object.keys()` exactly — a "all other fields are null" test would be
+subtly wrong for `{msecs: undefined, _v6: true}`.
+
+**Out-of-range reads are not errors in JS.** Two places rely on this:
+- `unsafeStringify` on a short array yields the literal text `"undefined"` (which
+  is what makes `stringify` throw `TypeError` rather than an index error)
+- `v1` zero-fills a `node` shorter than 6 bytes
+
+Both are emulated explicitly rather than allowed to throw
+`ArrayIndexOutOfBoundsException`.
+
+**In-place mutation is observable.** `_v4` writes the version/variant bits back
+into the caller's `random` array, and `rng()` returns a shared module-level buffer.
+Both are preserved — the upstream `expectedBytes` fixture depends on the former.
+
+**JS falsy coalescing in the CLI.** `uuid-bin.ts` does
+`const version = args.shift() || 'v4'`. That is *falsy* coalescing, not a null check:
+`args.shift()` yields `''` when the first argument is an empty string, and
+`'' || 'v4'` is `'v4'`. So `uuid ""` generates a v4 UUID rather than printing usage.
+An "is the argument list empty" test gets this wrong. *(Found by differential CLI
+fixtures, not by the ported test suite; now covered by
+`UuidBinTest.emptyArgumentDefaultsToV4`.)*
+
+**Error types.** `JSTypeError`, `JSRangeError`, `JSError` and `JSURIError` mirror
+the JS error classes, because the tests assert on which one is thrown
+(`assert.throws(..., RangeError)`).
+
+**Unpaired surrogates.** `encodeURIComponent` throws `URIError: URI malformed`;
+Java's `getBytes(UTF_8)` would silently substitute `?` and produce a different but
+valid-looking UUID. `V35.stringToBytes` validates surrogate pairing so it fails
+where the original does. *(This was found by probing the original, not from the
+test suite.)*
+
+## Deliberate deviations
+
+| Item | Rationale |
+|---|---|
+| `md5-browser.ts` / `sha1-browser.ts` not ported | ~300 lines of hand-rolled MD5/SHA-1 that exist only because browsers lack a synchronous digest API. `MessageDigest` is always available on the JVM. The Node path (`md5.ts`/`sha1.ts`) is ported and is what the tests exercise. |
+| `browser.ts` build entry not ported | No browser target. |
+| `V4.randomUUID` is a swappable `Supplier` | Stands in for ambient `crypto.randomUUID`, and provides the seam the TS tests get from `t.mock.method`. Defaults to `java.util.UUID.randomUUID()`. |
+| Overloads instead of one variadic function | TS returns `string` or `Uint8Array` depending on whether `buf` was passed; Java needs one method per return type. |
+| `Version6Options` is an empty subclass | TS `type Version6Options = Version1Options` is a pure alias; Java has none. |
+
+## Known limitation
+
+`V4.v4()` (no arguments) delegates to `java.util.UUID.randomUUID()`, matching the
+original's delegation to `crypto.randomUUID()`. Both are compliant v4 generators
+backed by a CSPRNG, but they are *random* — output is necessarily not reproducible
+across the two runtimes. Every deterministic path (explicit `random`/`rng`/`msecs`/
+`seq`/`node`/`clockseq`) is covered by the parity corpus.

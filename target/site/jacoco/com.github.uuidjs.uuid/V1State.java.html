@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>V1State.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">V1State.java</span></div><h1>V1State.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.Arrays;
+import java.util.Objects;
+
+/**
+ * Port of the internal {@code V1State} type in {@code src/v1.ts}.
+ *
+ * &lt;p&gt;v1 &amp;amp; v6 timestamps specify time from the Gregorian epoch in 100ns
+ * intervals, requiring 57+ bits of precision — outside the precision of IEEE754
+ * floats (i.e. JS numbers). The original works around this by storing
+ * {@code msecs} (milliseconds since unix epoch) and {@code nsecs} (100-nanosecond
+ * offset from {@code msecs}) separately. That representation is kept verbatim.
+ *
+ * &lt;p&gt;{@link #equals(Object)} is implemented because the TS tests compare whole
+ * state objects with {@code assert.deepStrictEqual}.
+ */
+public final class V1State {
+
+  /**
+   * Sentinel for the TS initialiser {@code state.msecs ??= -Infinity}.
+   *
+   * &lt;p&gt;{@code msecs} is only ever compared ({@code ===}, {@code &gt;}, {@code &lt;})
+   * while holding this value, and is unconditionally overwritten with {@code now}
+   * before {@code updateV1State} returns — so it can never leak into a result.
+   * {@link Long#MIN_VALUE} therefore reproduces {@code -Infinity} exactly for every
+   * reachable code path.
+   */
+  static final long NEGATIVE_INFINITY = Long.MIN_VALUE;
+
+  Long msecs;
+  Integer nsecs;
+  Integer clockseq;
+  byte[] node;
+
+<span class="fc" id="L36">  public V1State() {}</span>
+
+<span class="fc" id="L38">  public V1State(Long msecs, Integer nsecs, Integer clockseq, byte[] node) {</span>
+<span class="fc" id="L39">    this.msecs = msecs;</span>
+<span class="fc" id="L40">    this.nsecs = nsecs;</span>
+<span class="fc" id="L41">    this.clockseq = clockseq;</span>
+<span class="fc" id="L42">    this.node = node;</span>
+<span class="fc" id="L43">  }</span>
+
+  public Long msecs() {
+<span class="fc" id="L46">    return msecs;</span>
+  }
+
+  public Integer nsecs() {
+<span class="fc" id="L50">    return nsecs;</span>
+  }
+
+  public Integer clockseq() {
+<span class="fc" id="L54">    return clockseq;</span>
+  }
+
+  public byte[] node() {
+<span class="fc" id="L58">    return node;</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="fc bfc" id="L63" title="All 2 branches covered.">    if (this == o) {</span>
+<span class="fc" id="L64">      return true;</span>
+    }
+<span class="fc bfc" id="L66" title="All 2 branches covered.">    if (!(o instanceof V1State)) {</span>
+<span class="fc" id="L67">      return false;</span>
+    }
+<span class="fc" id="L69">    V1State other = (V1State) o;</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">    return Objects.equals(msecs, other.msecs)</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">        &amp;&amp; Objects.equals(nsecs, other.nsecs)</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">        &amp;&amp; Objects.equals(clockseq, other.clockseq)</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        &amp;&amp; Arrays.equals(node, other.node);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="fc" id="L78">    return Objects.hash(msecs, nsecs, clockseq, Arrays.hashCode(node));</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="fc" id="L83">    return &quot;V1State{msecs=&quot;</span>
+        + msecs
+        + &quot;, nsecs=&quot;
+        + nsecs
+        + &quot;, clockseq=&quot;
+        + clockseq
+        + &quot;, node=&quot;
+<span class="fc bfc" id="L90" title="All 2 branches covered.">        + (node == null ? &quot;null&quot; : Arrays.toString(node))</span>
+        + '}';
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

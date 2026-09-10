@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Version7Options.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">Version7Options.java</span></div><h1>Version7Options.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.function.Supplier;
+
+/**
+ * Port of the TS {@code Version7Options} type:
+ *
+ * &lt;pre&gt;
+ * export type Version7Options = {
+ *   random?: Uint8Array;
+ *   msecs?: number;
+ *   seq?: number;
+ *   rng?: () =&amp;gt; Uint8Array;
+ * };
+ * &lt;/pre&gt;
+ */
+public final class Version7Options {
+
+  private byte[] random;
+  private Long msecs;
+  private Integer seq;
+  private Supplier&lt;byte[]&gt; rng;
+
+<span class="fc" id="L24">  public Version7Options() {}</span>
+
+  public Version7Options random(byte[] random) {
+<span class="fc" id="L27">    this.random = random;</span>
+<span class="fc" id="L28">    return this;</span>
+  }
+
+  public Version7Options msecs(Long msecs) {
+<span class="fc" id="L32">    this.msecs = msecs;</span>
+<span class="fc" id="L33">    return this;</span>
+  }
+
+  public Version7Options msecs(long msecs) {
+<span class="fc" id="L37">    return msecs(Long.valueOf(msecs));</span>
+  }
+
+  public Version7Options seq(Integer seq) {
+<span class="fc" id="L41">    this.seq = seq;</span>
+<span class="fc" id="L42">    return this;</span>
+  }
+
+  public Version7Options seq(int seq) {
+<span class="fc" id="L46">    return seq(Integer.valueOf(seq));</span>
+  }
+
+  public Version7Options rng(Supplier&lt;byte[]&gt; rng) {
+<span class="fc" id="L50">    this.rng = rng;</span>
+<span class="fc" id="L51">    return this;</span>
+  }
+
+  byte[] random() {
+<span class="fc" id="L55">    return random;</span>
+  }
+
+  Long msecs() {
+<span class="fc" id="L59">    return msecs;</span>
+  }
+
+  Integer seq() {
+<span class="fc" id="L63">    return seq;</span>
+  }
+
+  Supplier&lt;byte[]&gt; rng() {
+<span class="fc" id="L67">    return rng;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

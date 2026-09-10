@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Parse.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">Parse.java</span></div><h1>Parse.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+/** Port of {@code src/parse.ts}. */
+public final class Parse {
+  private Parse() {}
+
+  /**
+   * Mirrors:
+   *
+   * &lt;pre&gt;
+   * function parse(uuid: string): NonSharedArrayBuffer {
+   *   if (!validate(uuid)) {
+   *     throw TypeError('Invalid UUID');
+   *   }
+   *   ...
+   * }
+   * &lt;/pre&gt;
+   *
+   * &lt;p&gt;Numeric notes:
+   *
+   * &lt;ul&gt;
+   *   &lt;li&gt;{@code parseInt(slice, 16)} becomes {@link Long#parseLong(String, int)}. A
+   *       {@code long} is required for the final 12-hex-digit (48-bit) field, which
+   *       overflows {@code int}.
+   *   &lt;li&gt;JavaScript {@code &gt;&gt;&gt;} coerces its operand with {@code ToUint32} first, so
+   *       {@code v &gt;&gt;&gt; 24} on a 48-bit {@code v} keeps only bits 24..31. Masking the
+   *       {@code long} result with {@code 0xff} reproduces that exactly.
+   *   &lt;li&gt;The two highest bytes use {@code /} in the original (&quot;Use '/' to avoid
+   *       32-bit truncation when bit-shifting high-order bytes&quot;). Because {@code v} is
+   *       non-negative, JavaScript's float division followed by {@code ToInt32}
+   *       truncation is identical to Java's integer division.
+   * &lt;/ul&gt;
+   */
+  public static byte[] parse(Object uuid) {
+<span class="fc bfc" id="L35" title="All 2 branches covered.">    if (!Validate.validate(uuid)) {</span>
+<span class="fc" id="L36">      throw new JSTypeError(&quot;Invalid UUID&quot;);</span>
+    }
+
+<span class="fc" id="L39">    String s = (String) uuid;</span>
+<span class="fc" id="L40">    byte[] out = new byte[16];</span>
+    long v;
+
+    // Parse ########-....-....-....-............
+<span class="fc" id="L44">    v = Long.parseLong(s.substring(0, 8), 16);</span>
+<span class="fc" id="L45">    out[0] = (byte) (v &gt;&gt;&gt; 24);</span>
+<span class="fc" id="L46">    out[1] = (byte) ((v &gt;&gt;&gt; 16) &amp; 0xff);</span>
+<span class="fc" id="L47">    out[2] = (byte) ((v &gt;&gt;&gt; 8) &amp; 0xff);</span>
+<span class="fc" id="L48">    out[3] = (byte) (v &amp; 0xff);</span>
+
+    // Parse ........-####-....-....-............
+<span class="fc" id="L51">    v = Long.parseLong(s.substring(9, 13), 16);</span>
+<span class="fc" id="L52">    out[4] = (byte) (v &gt;&gt;&gt; 8);</span>
+<span class="fc" id="L53">    out[5] = (byte) (v &amp; 0xff);</span>
+
+    // Parse ........-....-####-....-............
+<span class="fc" id="L56">    v = Long.parseLong(s.substring(14, 18), 16);</span>
+<span class="fc" id="L57">    out[6] = (byte) (v &gt;&gt;&gt; 8);</span>
+<span class="fc" id="L58">    out[7] = (byte) (v &amp; 0xff);</span>
+
+    // Parse ........-....-....-####-............
+<span class="fc" id="L61">    v = Long.parseLong(s.substring(19, 23), 16);</span>
+<span class="fc" id="L62">    out[8] = (byte) (v &gt;&gt;&gt; 8);</span>
+<span class="fc" id="L63">    out[9] = (byte) (v &amp; 0xff);</span>
+
+    // Parse ........-....-....-....-############
+    // (Use &quot;/&quot; to avoid 32-bit truncation when bit-shifting high-order bytes)
+<span class="fc" id="L67">    v = Long.parseLong(s.substring(24, 36), 16);</span>
+<span class="fc" id="L68">    out[10] = (byte) ((v / 0x10000000000L) &amp; 0xff);</span>
+<span class="fc" id="L69">    out[11] = (byte) ((v / 0x100000000L) &amp; 0xff);</span>
+<span class="fc" id="L70">    out[12] = (byte) ((v &gt;&gt;&gt; 24) &amp; 0xff);</span>
+<span class="fc" id="L71">    out[13] = (byte) ((v &gt;&gt;&gt; 16) &amp; 0xff);</span>
+<span class="fc" id="L72">    out[14] = (byte) ((v &gt;&gt;&gt; 8) &amp; 0xff);</span>
+<span class="fc" id="L73">    out[15] = (byte) (v &amp; 0xff);</span>
+
+<span class="fc" id="L75">    return out;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

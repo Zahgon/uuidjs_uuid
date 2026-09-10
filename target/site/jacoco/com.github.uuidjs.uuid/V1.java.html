@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>V1.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">V1.java</span></div><h1>V1.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.Arrays;
+import java.util.Set;
+import java.util.function.Supplier;
+
+/**
+ * Port of {@code src/v1.ts} — time-based UUIDs.
+ *
+ * &lt;p&gt;Inspired by https://github.com/LiosK/UUID.js and
+ * http://docs.python.org/library/uuid.html
+ */
+public final class V1 {
+  private V1() {}
+
+  /** Mirrors the module-level {@code const _state: V1State = {}}. */
+<span class="fc" id="L17">  private static final V1State STATE = new V1State();</span>
+
+  /** Offset to Gregorian epoch, per RFC 9562 §5.1. */
+  private static final long GREGORIAN_OFFSET_MS = 12219292800000L;
+
+  // ---------------------------------------------------------------------------
+  // Public overloads. TypeScript expresses these as a single function whose
+  // return type depends on whether `buf` was supplied; Java needs one method per
+  // return type.
+  // ---------------------------------------------------------------------------
+
+  public static String v1() {
+<span class="fc" id="L29">    return v1((Version1Options) null);</span>
+  }
+
+  public static String v1(Version1Options options) {
+<span class="fc" id="L33">    byte[] bytes = generate(options, null, 0);</span>
+<span class="fc" id="L34">    return Stringify.unsafeStringify(bytes, 0);</span>
+  }
+
+  public static byte[] v1(Version1Options options, byte[] buf) {
+<span class="fc" id="L38">    return v1(options, buf, 0);</span>
+  }
+
+  public static byte[] v1(Version1Options options, byte[] buf, int offset) {
+<span class="fc" id="L42">    return generate(options, buf, offset);</span>
+  }
+
+  /**
+   * Mirrors the body of the TS {@code v1()} implementation signature, including the
+   * {@code _v6} extraction dance.
+   */
+  static byte[] generate(Version1Options options, byte[] buf, int offset) {
+    byte[] bytes;
+
+    // Extract _v6 flag from options, clearing options if appropriate
+<span class="fc bfc" id="L53" title="All 4 branches covered.">    boolean isV6 = options != null &amp;&amp; options.isV6();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">    if (options != null) {</span>
+<span class="fc" id="L55">      Set&lt;String&gt; optionsKeys = options.keys();</span>
+<span class="fc bfc" id="L56" title="All 4 branches covered.">      if (optionsKeys.size() == 1 &amp;&amp; optionsKeys.contains(&quot;_v6&quot;)) {</span>
+<span class="fc" id="L57">        options = null;</span>
+      }
+    }
+
+<span class="fc bfc" id="L61" title="All 2 branches covered.">    if (options != null) {</span>
+      // With options: Make UUID independent of internal state
+<span class="fc" id="L63">      bytes =</span>
+<span class="fc" id="L64">          v1Bytes(</span>
+<span class="fc" id="L65">              coalesceRandom(options.random(), options.rng()),</span>
+<span class="fc" id="L66">              options.msecs(),</span>
+<span class="fc" id="L67">              options.nsecs(),</span>
+<span class="fc" id="L68">              options.clockseq(),</span>
+<span class="fc" id="L69">              options.node(),</span>
+              buf,
+              offset);
+    } else {
+      // Without options: Make UUID from internal state
+<span class="fc" id="L74">      long now = System.currentTimeMillis();</span>
+<span class="fc" id="L75">      byte[] rnds = Rng.rng();</span>
+
+<span class="fc" id="L77">      updateV1State(STATE, now, rnds);</span>
+
+      // Generate UUID. Note that v6 uses random values for `clockseq` and `node`.
+      // https://www.rfc-editor.org/rfc/rfc9562.html#section-5.6-4
+<span class="fc" id="L81">      bytes =</span>
+<span class="fc" id="L82">          v1Bytes(</span>
+              rnds,
+              STATE.msecs,
+              STATE.nsecs,
+<span class="fc bfc" id="L86" title="All 2 branches covered.">              isV6 ? null : STATE.clockseq,</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">              isV6 ? null : STATE.node,</span>
+              buf,
+              offset);
+    }
+
+<span class="fc" id="L92">    return bytes;</span>
+  }
+
+  /** Mirrors {@code options.random ?? options.rng?.() ?? rng()}. */
+  private static byte[] coalesceRandom(byte[] random, Supplier&lt;byte[]&gt; rng) {
+<span class="fc bfc" id="L97" title="All 2 branches covered.">    if (random != null) {</span>
+<span class="fc" id="L98">      return random;</span>
+    }
+<span class="fc bfc" id="L100" title="All 2 branches covered.">    if (rng != null) {</span>
+<span class="fc" id="L101">      byte[] r = rng.get();</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">      if (r != null) {</span>
+<span class="fc" id="L103">        return r;</span>
+      }
+    }
+<span class="fc" id="L106">    return Rng.rng();</span>
+  }
+
+  /**
+   * (Private!) Do not use. This method is only exported for testing purposes and may
+   * change without notice.
+   *
+   * &lt;p&gt;Mirrors {@code export function updateV1State(state, now, rnds)}.
+   */
+  public static V1State updateV1State(V1State state, long now, byte[] rnds) {
+<span class="fc bfc" id="L116" title="All 2 branches covered.">    if (state.msecs == null) {</span>
+<span class="fc" id="L117">      state.msecs = V1State.NEGATIVE_INFINITY;</span>
+    }
+<span class="fc bfc" id="L119" title="All 2 branches covered.">    if (state.nsecs == null) {</span>
+<span class="fc" id="L120">      state.nsecs = 0;</span>
+    }
+
+    // Update timestamp
+<span class="fc bfc" id="L124" title="All 2 branches covered.">    if (now == state.msecs) {</span>
+      // Same msec-interval = simulate higher clock resolution by bumping `nsecs`
+      // https://www.rfc-editor.org/rfc/rfc9562.html#section-6.1-2.6
+<span class="fc" id="L127">      state.nsecs = state.nsecs + 1;</span>
+
+      // Check for `nsecs` overflow (nsecs is capped at 10K intervals / msec)
+<span class="fc bfc" id="L130" title="All 2 branches covered.">      if (state.nsecs &gt;= 10000) {</span>
+        // Prior to uuid@11 this would throw an error, however the RFCs allow for
+        // changing the node in this case. This slightly breaks monotonicity at
+        // msec granularity, but that's not a significant concern.
+        // https://www.rfc-editor.org/rfc/rfc9562.html#section-6.1-2.16
+<span class="fc" id="L135">        state.node = null;</span>
+<span class="fc" id="L136">        state.nsecs = 0;</span>
+      }
+<span class="fc bfc" id="L138" title="All 2 branches covered.">    } else if (now &gt; state.msecs) {</span>
+      // Reset nsec counter when clock advances to a new msec interval
+<span class="fc" id="L140">      state.nsecs = 0;</span>
+<span class="pc bpc" id="L141" title="1 of 2 branches missed.">    } else if (now &lt; state.msecs) {</span>
+      // Handle clock regression
+      // https://www.rfc-editor.org/rfc/rfc9562.html#section-6.1-2.7
+      //
+      // Note: Unsetting node here causes both it and clockseq to be randomized,
+      // below.
+<span class="fc" id="L147">      state.node = null;</span>
+    }
+
+    // Init node and clock sequence (do this after timestamp update which may
+    // reset the node) https://www.rfc-editor.org/rfc/rfc9562.html#section-5.1-7
+<span class="fc bfc" id="L152" title="All 2 branches covered.">    if (state.node == null) {</span>
+<span class="fc" id="L153">      state.node = Arrays.copyOfRange(rnds, 10, 16);</span>
+
+      // Set multicast bit
+      // https://www.rfc-editor.org/rfc/rfc9562.html#section-6.10-3
+<span class="fc" id="L157">      state.node[0] |= 0x01;</span>
+
+      // Clock sequence must be randomized
+      // https://www.rfc-editor.org/rfc/rfc9562.html#section-5.1-8
+<span class="fc" id="L161">      state.clockseq = (((rnds[8] &amp; 0xff) &lt;&lt; 8) | (rnds[9] &amp; 0xff)) &amp; 0x3fff;</span>
+    }
+
+<span class="fc" id="L164">    state.msecs = now;</span>
+
+<span class="fc" id="L166">    return state;</span>
+  }
+
+  /**
+   * Mirrors the private {@code v1Bytes(...)}.
+   *
+   * &lt;p&gt;&lt;b&gt;Numeric fidelity notes.&lt;/b&gt;
+   *
+   * &lt;ul&gt;
+   *   &lt;li&gt;{@code msecs &amp; 0xfffffff} in JS applies {@code ToInt32} then masks to 28
+   *       bits. Since the mask is narrower than 32 bits, the result is simply the low
+   *       28 bits of {@code msecs} — identical to the Java {@code long} mask.
+   *   &lt;li&gt;{@code t &gt;&gt;&gt; 0} is {@code ToUint32}, i.e. {@code t mod 2^32}, written here
+   *       as {@code t &amp; 0xFFFFFFFFL}.
+   *   &lt;li&gt;{@code (msecs / 0x10000000) | 0} is float division followed by
+   *       truncation-toward-zero. {@code msecs} is always positive here, so Java's
+   *       integer division is equivalent.
+   * &lt;/ul&gt;
+   */
+  static byte[] v1Bytes(
+      byte[] rnds,
+      Long msecsIn,
+      Integer nsecsIn,
+      Integer clockseqIn,
+      byte[] nodeIn,
+      byte[] buf,
+      int offset) {
+
+<span class="fc bfc" id="L194" title="All 2 branches covered.">    if (rnds.length &lt; 16) {</span>
+<span class="fc" id="L195">      throw new JSError(&quot;Random bytes length must be &gt;= 16&quot;);</span>
+    }
+
+    // Defaults
+<span class="fc bfc" id="L199" title="All 2 branches covered.">    if (buf == null) {</span>
+<span class="fc" id="L200">      buf = new byte[16];</span>
+<span class="fc" id="L201">      offset = 0;</span>
+    } else {
+<span class="fc bfc" id="L203" title="All 4 branches covered.">      if (offset &lt; 0 || offset + 16 &gt; buf.length) {</span>
+<span class="fc" id="L204">        throw new JSRangeError(</span>
+            &quot;UUID byte range &quot; + offset + &quot;:&quot; + (offset + 15) + &quot; is out of buffer bounds&quot;);
+      }
+    }
+
+<span class="pc bpc" id="L209" title="1 of 2 branches missed.">    long msecs = (msecsIn == null) ? System.currentTimeMillis() : msecsIn;</span>
+<span class="fc bfc" id="L210" title="All 2 branches covered.">    int nsecs = (nsecsIn == null) ? 0 : nsecsIn;</span>
+    int clockseq =
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        (clockseqIn == null)</span>
+<span class="fc" id="L213">            ? ((((rnds[8] &amp; 0xff) &lt;&lt; 8) | (rnds[9] &amp; 0xff)) &amp; 0x3fff)</span>
+<span class="fc" id="L214">            : clockseqIn;</span>
+<span class="fc" id="L215">    byte[] node = nodeIn;</span>
+<span class="fc bfc" id="L216" title="All 2 branches covered.">    if (node == null) {</span>
+<span class="fc" id="L217">      node = Arrays.copyOfRange(rnds, 10, 16);</span>
+
+      // Set multicast bit
+      // https://www.rfc-editor.org/rfc/rfc9562.html#section-6.10-3
+<span class="fc" id="L221">      node[0] |= 0x01;</span>
+    }
+
+    // Offset to Gregorian epoch
+    // https://www.rfc-editor.org/rfc/rfc9562.html#section-5.1-1
+<span class="fc" id="L226">    msecs += GREGORIAN_OFFSET_MS;</span>
+
+    // The timestamp is `msecs * 10000 + nsecs`, which needs more precision than a
+    // JS number has, so it is computed as a 32-bit low half and a 28-bit high
+    // half. `msecs` is split at bit 28, because `0x10000000 * 10000` is exactly
+    // `625 * 0x100000000`: its high bits then contribute only to the high half of
+    // the timestamp, and its low bits only to the low half.
+<span class="fc" id="L233">    long t = (msecs &amp; 0xfffffffL) * 10000 + nsecs;</span>
+
+    // `time_low`
+<span class="fc" id="L236">    long tl = t &amp; 0xFFFFFFFFL;</span>
+<span class="fc" id="L237">    buf[offset++] = (byte) ((tl &gt;&gt;&gt; 24) &amp; 0xff);</span>
+<span class="fc" id="L238">    buf[offset++] = (byte) ((tl &gt;&gt;&gt; 16) &amp; 0xff);</span>
+<span class="fc" id="L239">    buf[offset++] = (byte) ((tl &gt;&gt;&gt; 8) &amp; 0xff);</span>
+<span class="fc" id="L240">    buf[offset++] = (byte) (tl &amp; 0xff);</span>
+
+    // `time_mid`. Note that adding `nsecs`, above, may have carried out of
+    // `time_low`, so `t`'s own high bits have to be folded in here.
+<span class="fc" id="L244">    long tmh = ((msecs / 0x10000000L) * 625 + (t / 0x100000000L)) &amp; 0xfffffffL;</span>
+<span class="fc" id="L245">    buf[offset++] = (byte) ((tmh &gt;&gt;&gt; 8) &amp; 0xff);</span>
+<span class="fc" id="L246">    buf[offset++] = (byte) (tmh &amp; 0xff);</span>
+
+    // `time_high_and_version`
+<span class="fc" id="L249">    buf[offset++] = (byte) (((tmh &gt;&gt;&gt; 24) &amp; 0xf) | 0x10); // include version</span>
+<span class="fc" id="L250">    buf[offset++] = (byte) ((tmh &gt;&gt;&gt; 16) &amp; 0xff);</span>
+
+    // `clock_seq_hi_and_reserved` | variant
+<span class="fc" id="L253">    buf[offset++] = (byte) ((clockseq &gt;&gt;&gt; 8) | 0x80);</span>
+
+    // `clock_seq_low`
+<span class="fc" id="L256">    buf[offset++] = (byte) (clockseq &amp; 0xff);</span>
+
+    // `node`
+    //
+    // NOTE: a caller-supplied `node` shorter than 6 bytes is not an error in the
+    // original. Reading past the end of a JS typed array yields `undefined`, and
+    // assigning `undefined` into a Uint8Array stores 0. e.g.
+    // `v1({node: Uint8Array.of(1, 2), ...})` ends `...-010200000000`. Java would
+    // throw ArrayIndexOutOfBoundsException, so the out-of-range read is emulated.
+<span class="fc bfc" id="L265" title="All 2 branches covered.">    for (int n = 0; n &lt; 6; ++n) {</span>
+<span class="fc bfc" id="L266" title="All 2 branches covered.">      buf[offset++] = (n &lt; node.length) ? node[n] : 0;</span>
+    }
+
+<span class="fc" id="L269">    return buf;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

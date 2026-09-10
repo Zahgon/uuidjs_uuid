@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Version1Options.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">Version1Options.java</span></div><h1>Version1Options.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
+import java.util.function.Supplier;
+
+/**
+ * Port of the TS {@code Version1Options} type:
+ *
+ * &lt;pre&gt;
+ * export type Version1Options = {
+ *   node?: Uint8Array;
+ *   clockseq?: number;
+ *   random?: Uint8Array;
+ *   rng?: () =&amp;gt; Uint8Array;
+ *   msecs?: number;
+ *   nsecs?: number;
+ *   _v6?: boolean; // Internal use only!
+ * };
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;&lt;b&gt;Why key presence is tracked.&lt;/b&gt; {@code v1()} contains this branch:
+ *
+ * &lt;pre&gt;
+ * const optionsKeys = Object.keys(options);
+ * if (optionsKeys.length === 1 &amp;amp;&amp;amp; optionsKeys[0] === '_v6') {
+ *   options = undefined;
+ * }
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;That is a reflective check over the object's own enumerable keys, which has no
+ * direct Java analogue. A plain &quot;all other fields are null&quot; test would be *almost*
+ * right, but would wrongly collapse an explicitly-present-but-undefined key (e.g.
+ * {@code {msecs: undefined, _v6: true}} has two keys in JS). Recording which
+ * setters were called reproduces {@code Object.keys()} faithfully.
+ */
+public class Version1Options {
+
+<span class="fc" id="L39">  private final Set&lt;String&gt; presentKeys = new LinkedHashSet&lt;&gt;();</span>
+
+  private byte[] node;
+  private Integer clockseq;
+  private byte[] random;
+  private Supplier&lt;byte[]&gt; rng;
+  private Long msecs;
+  private Integer nsecs;
+  private boolean v6;
+
+<span class="fc" id="L49">  public Version1Options() {}</span>
+
+  // --- fluent setters (each records the key, mirroring JS object literal keys) ---
+
+  public Version1Options node(byte[] node) {
+<span class="fc" id="L54">    this.node = node;</span>
+<span class="fc" id="L55">    presentKeys.add(&quot;node&quot;);</span>
+<span class="fc" id="L56">    return this;</span>
+  }
+
+  public Version1Options clockseq(Integer clockseq) {
+<span class="fc" id="L60">    this.clockseq = clockseq;</span>
+<span class="fc" id="L61">    presentKeys.add(&quot;clockseq&quot;);</span>
+<span class="fc" id="L62">    return this;</span>
+  }
+
+  public Version1Options random(byte[] random) {
+<span class="fc" id="L66">    this.random = random;</span>
+<span class="fc" id="L67">    presentKeys.add(&quot;random&quot;);</span>
+<span class="fc" id="L68">    return this;</span>
+  }
+
+  public Version1Options rng(Supplier&lt;byte[]&gt; rng) {
+<span class="fc" id="L72">    this.rng = rng;</span>
+<span class="fc" id="L73">    presentKeys.add(&quot;rng&quot;);</span>
+<span class="fc" id="L74">    return this;</span>
+  }
+
+  public Version1Options msecs(Long msecs) {
+<span class="fc" id="L78">    this.msecs = msecs;</span>
+<span class="fc" id="L79">    presentKeys.add(&quot;msecs&quot;);</span>
+<span class="fc" id="L80">    return this;</span>
+  }
+
+  public Version1Options msecs(long msecs) {
+<span class="fc" id="L84">    return msecs(Long.valueOf(msecs));</span>
+  }
+
+  public Version1Options nsecs(Integer nsecs) {
+<span class="fc" id="L88">    this.nsecs = nsecs;</span>
+<span class="fc" id="L89">    presentKeys.add(&quot;nsecs&quot;);</span>
+<span class="fc" id="L90">    return this;</span>
+  }
+
+  public Version1Options nsecs(int nsecs) {
+<span class="fc" id="L94">    return nsecs(Integer.valueOf(nsecs));</span>
+  }
+
+  /** Internal use only — mirrors the {@code _v6} flag. */
+  Version1Options v6(boolean v6) {
+<span class="fc" id="L99">    this.v6 = v6;</span>
+<span class="fc" id="L100">    presentKeys.add(&quot;_v6&quot;);</span>
+<span class="fc" id="L101">    return this;</span>
+  }
+
+  // --- accessors ---
+
+  byte[] node() {
+<span class="fc" id="L107">    return node;</span>
+  }
+
+  Integer clockseq() {
+<span class="fc" id="L111">    return clockseq;</span>
+  }
+
+  byte[] random() {
+<span class="fc" id="L115">    return random;</span>
+  }
+
+  Supplier&lt;byte[]&gt; rng() {
+<span class="fc" id="L119">    return rng;</span>
+  }
+
+  Long msecs() {
+<span class="fc" id="L123">    return msecs;</span>
+  }
+
+  Integer nsecs() {
+<span class="fc" id="L127">    return nsecs;</span>
+  }
+
+  boolean isV6() {
+<span class="fc" id="L131">    return v6;</span>
+  }
+
+  /** Mirrors {@code Object.keys(options)}. */
+  Set&lt;String&gt; keys() {
+<span class="fc" id="L136">    return presentKeys;</span>
+  }
+
+  /** Mirrors the object spread {@code {...options, _v6: true}} used by {@code v6()}. */
+  Version1Options copy() {
+<span class="fc" id="L141">    Version1Options c = new Version1Options();</span>
+<span class="fc bfc" id="L142" title="All 2 branches covered.">    for (String key : presentKeys) {</span>
+<span class="pc bpc" id="L143" title="1 of 8 branches missed.">      switch (key) {</span>
+<span class="fc" id="L144">        case &quot;node&quot; -&gt; c.node(node);</span>
+<span class="fc" id="L145">        case &quot;clockseq&quot; -&gt; c.clockseq(clockseq);</span>
+<span class="fc" id="L146">        case &quot;random&quot; -&gt; c.random(random);</span>
+<span class="fc" id="L147">        case &quot;rng&quot; -&gt; c.rng(rng);</span>
+<span class="fc" id="L148">        case &quot;msecs&quot; -&gt; c.msecs(msecs);</span>
+<span class="fc" id="L149">        case &quot;nsecs&quot; -&gt; c.nsecs(nsecs);</span>
+<span class="fc" id="L150">        case &quot;_v6&quot; -&gt; c.v6(v6);</span>
+<span class="nc" id="L151">        default -&gt; throw new IllegalStateException(&quot;unknown key: &quot; + key);</span>
+      }
+<span class="fc" id="L153">    }</span>
+<span class="fc" id="L154">    return c;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

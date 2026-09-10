@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>V7.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">V7.java</span></div><h1>V7.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.function.Supplier;
+
+/** Port of {@code src/v7.ts}. */
+public final class V7 {
+  private V7() {}
+
+  /** Mirrors the module-level {@code const _state: V7State = {}}. */
+<span class="fc" id="L10">  private static final V7State STATE = new V7State();</span>
+
+  public static String v7() {
+<span class="fc" id="L13">    return v7((Version7Options) null);</span>
+  }
+
+  public static String v7(Version7Options options) {
+<span class="fc" id="L17">    return Stringify.unsafeStringify(generate(options, null, 0), 0);</span>
+  }
+
+  public static byte[] v7(Version7Options options, byte[] buf) {
+<span class="fc" id="L21">    return v7(options, buf, 0);</span>
+  }
+
+  public static byte[] v7(Version7Options options, byte[] buf, int offset) {
+<span class="fc" id="L25">    return generate(options, buf, offset);</span>
+  }
+
+  private static byte[] generate(Version7Options options, byte[] buf, int offset) {
+<span class="fc bfc" id="L29" title="All 2 branches covered.">    if (options != null) {</span>
+      // With options: Make UUID independent of internal state
+<span class="fc" id="L31">      return v7Bytes(</span>
+<span class="fc" id="L32">          coalesceRandom(options.random(), options.rng()),</span>
+<span class="fc" id="L33">          options.msecs(),</span>
+<span class="fc" id="L34">          options.seq(),</span>
+          buf,
+          offset);
+    }
+
+    // No options: Use internal state
+<span class="fc" id="L40">    long now = System.currentTimeMillis();</span>
+<span class="fc" id="L41">    byte[] rnds = Rng.rng();</span>
+
+<span class="fc" id="L43">    updateV7State(STATE, now, rnds);</span>
+
+<span class="fc" id="L45">    return v7Bytes(rnds, STATE.msecs, STATE.seq, buf, offset);</span>
+  }
+
+  private static byte[] coalesceRandom(byte[] random, Supplier&lt;byte[]&gt; rng) {
+<span class="fc bfc" id="L49" title="All 2 branches covered.">    if (random != null) {</span>
+<span class="fc" id="L50">      return random;</span>
+    }
+<span class="fc bfc" id="L52" title="All 2 branches covered.">    if (rng != null) {</span>
+<span class="fc" id="L53">      byte[] r = rng.get();</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">      if (r != null) {</span>
+<span class="fc" id="L55">        return r;</span>
+      }
+    }
+<span class="fc" id="L58">    return Rng.rng();</span>
+  }
+
+  /**
+   * (Private!) Do not use. This method is only exported for testing purposes and may
+   * change without notice.
+   *
+   * &lt;p&gt;Mirrors {@code export function updateV7State(state, now, rnds)}. The TS
+   * {@code state.seq = (state.seq + 1) | 0} is plain {@code int} addition here — Java
+   * ints already wrap at 32 bits.
+   */
+  public static V7State updateV7State(V7State state, long now, byte[] rnds) {
+<span class="fc bfc" id="L70" title="All 2 branches covered.">    if (state.msecs == null) {</span>
+<span class="fc" id="L71">      state.msecs = V7State.NEGATIVE_INFINITY;</span>
+    }
+<span class="fc bfc" id="L73" title="All 2 branches covered.">    if (state.seq == null) {</span>
+<span class="fc" id="L74">      state.seq = 0;</span>
+    }
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">    if (now &gt; state.msecs) {</span>
+      // Time has moved on! Pick a new random sequence number
+<span class="fc" id="L79">      state.seq = v7Sequence(rnds);</span>
+<span class="fc" id="L80">      state.msecs = now;</span>
+    } else {
+      // Bump sequence counter w/ 32-bit rollover
+<span class="fc" id="L83">      state.seq = state.seq + 1;</span>
+
+      // In case of rollover, bump timestamp to preserve monotonicity. This is
+      // allowed by the RFC and should self-correct as the system clock catches
+      // up. See https://www.rfc-editor.org/rfc/rfc9562.html#section-6.2-9.4
+<span class="fc bfc" id="L88" title="All 2 branches covered.">      if (state.seq == 0) {</span>
+<span class="fc" id="L89">        state.msecs = state.msecs + 1;</span>
+      }
+    }
+
+<span class="fc" id="L93">    return state;</span>
+  }
+
+  /**
+   * Mirrors the private {@code v7Bytes(...)}.
+   *
+   * &lt;p&gt;The six timestamp bytes use {@code /} rather than {@code &gt;&gt;&gt;} in the original,
+   * because a 48-bit millisecond value exceeds the 32-bit range of JS bitwise
+   * operators. {@code msecs} is non-negative, so JS float-division-then-truncate is
+   * equivalent to Java {@code long} division.
+   */
+  static byte[] v7Bytes(byte[] rnds, Long msecsIn, Integer seqIn, byte[] buf, int offset) {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">    if (rnds.length &lt; 16) {</span>
+<span class="fc" id="L106">      throw new JSError(&quot;Random bytes length must be &gt;= 16&quot;);</span>
+    }
+
+<span class="fc bfc" id="L109" title="All 2 branches covered.">    if (buf == null) {</span>
+<span class="fc" id="L110">      buf = new byte[16];</span>
+<span class="fc" id="L111">      offset = 0;</span>
+    } else {
+<span class="fc bfc" id="L113" title="All 4 branches covered.">      if (offset &lt; 0 || offset + 16 &gt; buf.length) {</span>
+<span class="fc" id="L114">        throw new JSRangeError(</span>
+            &quot;UUID byte range &quot; + offset + &quot;:&quot; + (offset + 15) + &quot; is out of buffer bounds&quot;);
+      }
+    }
+
+    // Defaults
+<span class="fc bfc" id="L120" title="All 2 branches covered.">    long msecs = (msecsIn == null) ? System.currentTimeMillis() : msecsIn;</span>
+<span class="fc bfc" id="L121" title="All 2 branches covered.">    int seq = (seqIn == null) ? v7Sequence(rnds) : seqIn;</span>
+
+    // byte 0-5: timestamp (48 bits)
+<span class="fc" id="L124">    buf[offset++] = (byte) ((msecs / 0x10000000000L) &amp; 0xff);</span>
+<span class="fc" id="L125">    buf[offset++] = (byte) ((msecs / 0x100000000L) &amp; 0xff);</span>
+<span class="fc" id="L126">    buf[offset++] = (byte) ((msecs / 0x1000000L) &amp; 0xff);</span>
+<span class="fc" id="L127">    buf[offset++] = (byte) ((msecs / 0x10000L) &amp; 0xff);</span>
+<span class="fc" id="L128">    buf[offset++] = (byte) ((msecs / 0x100L) &amp; 0xff);</span>
+<span class="fc" id="L129">    buf[offset++] = (byte) (msecs &amp; 0xff);</span>
+
+    // byte 6: `version` (4 bits) | sequence bits 28-31 (4 bits)
+<span class="fc" id="L132">    buf[offset++] = (byte) (0x70 | ((seq &gt;&gt;&gt; 28) &amp; 0x0f));</span>
+
+    // byte 7: sequence bits 20-27 (8 bits)
+<span class="fc" id="L135">    buf[offset++] = (byte) ((seq &gt;&gt;&gt; 20) &amp; 0xff);</span>
+
+    // byte 8: `variant` (2 bits) | sequence bits 14-19 (6 bits)
+<span class="fc" id="L138">    buf[offset++] = (byte) (0x80 | ((seq &gt;&gt;&gt; 14) &amp; 0x3f));</span>
+
+    // byte 9: sequence bits 6-13 (8 bits)
+<span class="fc" id="L141">    buf[offset++] = (byte) ((seq &gt;&gt;&gt; 6) &amp; 0xff);</span>
+
+    // byte 10: sequence bits 0-5 (6 bits) | random (2 bits)
+<span class="fc" id="L144">    buf[offset++] = (byte) (((seq &lt;&lt; 2) &amp; 0xff) | (rnds[10] &amp; 0x03));</span>
+
+    // bytes 11-15: random (40 bits)
+<span class="fc" id="L147">    buf[offset++] = rnds[11];</span>
+<span class="fc" id="L148">    buf[offset++] = rnds[12];</span>
+<span class="fc" id="L149">    buf[offset++] = rnds[13];</span>
+<span class="fc" id="L150">    buf[offset++] = rnds[14];</span>
+<span class="fc" id="L151">    buf[offset++] = rnds[15];</span>
+
+<span class="fc" id="L153">    return buf;</span>
+  }
+
+  /** Mirrors {@code v7Sequence(rnds)}. */
+  private static int v7Sequence(byte[] rnds) {
+<span class="fc" id="L158">    return ((rnds[6] &amp; 0x7f) &lt;&lt; 24)</span>
+        | ((rnds[7] &amp; 0xff) &lt;&lt; 16)
+        | ((rnds[8] &amp; 0xff) &lt;&lt; 8)
+        | (rnds[9] &amp; 0xff);
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

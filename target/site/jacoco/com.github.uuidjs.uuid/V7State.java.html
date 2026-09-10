@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>V7State.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">V7State.java</span></div><h1>V7State.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.Objects;
+
+/**
+ * Port of the internal {@code V7State} type in {@code src/v7.ts}.
+ *
+ * &lt;p&gt;{@code seq} is a 32-bit sequence number. The original relies on JavaScript's
+ * {@code | 0} to force 32-bit wraparound; Java's {@code int} wraps natively, so the
+ * arithmetic maps across without a mask. Note that a JS {@code 0xffffffff}
+ * (4294967295) becomes {@code -1} as a Java {@code int} — the bit pattern, and
+ * therefore every downstream shift and comparison, is identical.
+ */
+public final class V7State {
+
+  /** Sentinel for {@code state.msecs ??= -Infinity}. See {@link V1State#NEGATIVE_INFINITY}. */
+  static final long NEGATIVE_INFINITY = Long.MIN_VALUE;
+
+  Long msecs;
+  Integer seq;
+
+<span class="fc" id="L22">  public V7State() {}</span>
+
+<span class="fc" id="L24">  public V7State(Long msecs, Integer seq) {</span>
+<span class="fc" id="L25">    this.msecs = msecs;</span>
+<span class="fc" id="L26">    this.seq = seq;</span>
+<span class="fc" id="L27">  }</span>
+
+  public Long msecs() {
+<span class="fc" id="L30">    return msecs;</span>
+  }
+
+  public Integer seq() {
+<span class="fc" id="L34">    return seq;</span>
+  }
+
+  @Override
+  public boolean equals(Object o) {
+<span class="fc bfc" id="L39" title="All 2 branches covered.">    if (this == o) {</span>
+<span class="fc" id="L40">      return true;</span>
+    }
+<span class="fc bfc" id="L42" title="All 2 branches covered.">    if (!(o instanceof V7State)) {</span>
+<span class="fc" id="L43">      return false;</span>
+    }
+<span class="fc" id="L45">    V7State other = (V7State) o;</span>
+<span class="fc bfc" id="L46" title="All 4 branches covered.">    return Objects.equals(msecs, other.msecs) &amp;&amp; Objects.equals(seq, other.seq);</span>
+  }
+
+  @Override
+  public int hashCode() {
+<span class="fc" id="L51">    return Objects.hash(msecs, seq);</span>
+  }
+
+  @Override
+  public String toString() {
+<span class="fc" id="L56">    return &quot;V7State{msecs=&quot; + msecs + &quot;, seq=&quot; + seq + '}';</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

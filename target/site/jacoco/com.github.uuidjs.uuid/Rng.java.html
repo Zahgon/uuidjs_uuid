@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Rng.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">Rng.java</span></div><h1>Rng.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.security.SecureRandom;
+
+/** Port of {@code src/rng.ts}. */
+public final class Rng {
+  private Rng() {}
+
+  /**
+   * Mirrors the module-level shared buffer:
+   *
+   * &lt;pre&gt;
+   * const rnds8 = new Uint8Array(16);
+   * export default function rng() {
+   *   return crypto.getRandomValues(rnds8);
+   * }
+   * &lt;/pre&gt;
+   *
+   * &lt;p&gt;The buffer really is shared and re-used between calls in the original — that
+   * is an observable side effect (callers such as {@code _v4} mutate the returned
+   * array in place), so it is preserved rather than &quot;fixed&quot;.
+   */
+<span class="fc" id="L23">  private static final byte[] RNDS8 = new byte[16];</span>
+
+  /** {@code crypto.getRandomValues} requires a cryptographically strong source. */
+<span class="fc" id="L26">  private static final SecureRandom SECURE_RANDOM = new SecureRandom();</span>
+
+  public static byte[] rng() {
+<span class="fc" id="L29">    SECURE_RANDOM.nextBytes(RNDS8);</span>
+<span class="fc" id="L30">    return RNDS8;</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

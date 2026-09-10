@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UuidBin.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">UuidBin.java</span></div><h1>UuidBin.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+
+/**
+ * Port of {@code src/uuid-bin.ts} (the {@code uuid} CLI declared in
+ * {@code package.json}'s {@code bin} field).
+ *
+ * &lt;p&gt;{@code process.exit(0)} / {@code process.exit(1)} become
+ * {@link System#exit(int)}, and {@code assert.ok(x != null, msg)} becomes an
+ * explicit check that throws — Node's {@code assert} module aborts the process with
+ * a non-zero status, which an uncaught exception also does on the JVM.
+ */
+public final class UuidBin {
+  private UuidBin() {}
+
+  static void usage() {
+<span class="fc" id="L20">    System.out.println(&quot;Usage:&quot;);</span>
+<span class="fc" id="L21">    System.out.println(&quot;  uuid&quot;);</span>
+<span class="fc" id="L22">    System.out.println(&quot;  uuid v1&quot;);</span>
+<span class="fc" id="L23">    System.out.println(&quot;  uuid v3 &lt;name&gt; &lt;namespace uuid&gt;&quot;);</span>
+<span class="fc" id="L24">    System.out.println(&quot;  uuid v4&quot;);</span>
+<span class="fc" id="L25">    System.out.println(&quot;  uuid v5 &lt;name&gt; &lt;namespace uuid&gt;&quot;);</span>
+<span class="fc" id="L26">    System.out.println(&quot;  uuid v6&quot;);</span>
+<span class="fc" id="L27">    System.out.println(&quot;  uuid v7&quot;);</span>
+<span class="fc" id="L28">    System.out.println(&quot;  uuid --help&quot;);</span>
+<span class="fc" id="L29">    System.out.println(</span>
+        &quot;\nNote: &lt;namespace uuid&gt; may be \&quot;URL\&quot; or \&quot;DNS\&quot; to use the corresponding UUIDs&quot;
+            + &quot; defined by RFC9562&quot;);
+<span class="fc" id="L32">  }</span>
+
+  public static void main(String[] argv) {
+<span class="nc" id="L35">    System.exit(run(argv));</span>
+<span class="nc" id="L36">  }</span>
+
+  /**
+   * The CLI body, returning the process exit code instead of calling
+   * {@link System#exit(int)} directly, so it can be exercised by tests. {@code main}
+   * is a thin wrapper; observable behaviour (stdout and exit status) is unchanged.
+   */
+  static int run(String[] argv) {
+<span class="fc" id="L44">    Deque&lt;String&gt; args = new ArrayDeque&lt;&gt;(Arrays.asList(argv));</span>
+
+<span class="fc bfc" id="L46" title="All 2 branches covered.">    if (args.contains(&quot;--help&quot;)) {</span>
+<span class="fc" id="L47">      usage();</span>
+<span class="fc" id="L48">      return 0;</span>
+    }
+
+    // Mirrors `const version = args.shift() || 'v4';`
+    //
+    // NOTE: this is JavaScript *falsy* coalescing, not a null check. `args.shift()`
+    // yields `undefined` when there are no arguments, but it yields `''` when the
+    // first argument is an empty string — and `'' || 'v4'` is also `'v4'`. So
+    // `uuid &quot;&quot;` generates a v4 UUID rather than printing usage. A plain
+    // &quot;is the deque empty&quot; test gets the empty-string case wrong.
+<span class="fc" id="L58">    String version = args.pollFirst();</span>
+<span class="fc bfc" id="L59" title="All 4 branches covered.">    if (version == null || version.isEmpty()) {</span>
+<span class="fc" id="L60">      version = &quot;v4&quot;;</span>
+    }
+
+<span class="fc bfc" id="L63" title="All 7 branches covered.">    switch (version) {</span>
+      case &quot;v1&quot;:
+<span class="fc" id="L65">        System.out.println(V1.v1());</span>
+<span class="fc" id="L66">        break;</span>
+
+      case &quot;v3&quot;: {
+<span class="fc" id="L69">        String name = args.pollFirst();</span>
+<span class="fc" id="L70">        String namespace = args.pollFirst();</span>
+
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        assertOk(name != null, &quot;v3 name not specified&quot;);</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        assertOk(namespace != null, &quot;v3 namespace not specified&quot;);</span>
+
+<span class="fc bfc" id="L75" title="All 2 branches covered.">        if (&quot;URL&quot;.equals(namespace)) {</span>
+<span class="fc" id="L76">          namespace = V3.URL;</span>
+        }
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">        if (&quot;DNS&quot;.equals(namespace)) {</span>
+<span class="fc" id="L80">          namespace = V3.DNS;</span>
+        }
+
+<span class="fc" id="L83">        System.out.println(V3.v3(name, namespace));</span>
+<span class="fc" id="L84">        break;</span>
+      }
+
+      case &quot;v4&quot;:
+<span class="fc" id="L88">        System.out.println(V4.v4());</span>
+<span class="fc" id="L89">        break;</span>
+
+      case &quot;v5&quot;: {
+<span class="fc" id="L92">        String name = args.pollFirst();</span>
+<span class="fc" id="L93">        String namespace = args.pollFirst();</span>
+
+<span class="fc bfc" id="L95" title="All 2 branches covered.">        assertOk(name != null, &quot;v5 name not specified&quot;);</span>
+<span class="fc bfc" id="L96" title="All 2 branches covered.">        assertOk(namespace != null, &quot;v5 namespace not specified&quot;);</span>
+
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (&quot;URL&quot;.equals(namespace)) {</span>
+<span class="fc" id="L99">          namespace = V5.URL;</span>
+        }
+
+<span class="fc bfc" id="L102" title="All 2 branches covered.">        if (&quot;DNS&quot;.equals(namespace)) {</span>
+<span class="fc" id="L103">          namespace = V5.DNS;</span>
+        }
+
+<span class="fc" id="L106">        System.out.println(V5.v5(name, namespace));</span>
+<span class="fc" id="L107">        break;</span>
+      }
+
+      case &quot;v6&quot;:
+<span class="fc" id="L111">        System.out.println(V6.v6());</span>
+<span class="fc" id="L112">        break;</span>
+
+      case &quot;v7&quot;:
+<span class="fc" id="L115">        System.out.println(V7.v7());</span>
+<span class="fc" id="L116">        break;</span>
+
+      default:
+<span class="fc" id="L119">        usage();</span>
+<span class="fc" id="L120">        return 1;</span>
+    }
+
+<span class="fc" id="L123">    return 0;</span>
+  }
+
+  /** Mirrors {@code assert.ok(value, message)} from {@code node:assert/strict}. */
+  private static void assertOk(boolean value, String message) {
+<span class="fc bfc" id="L128" title="All 2 branches covered.">    if (!value) {</span>
+<span class="fc" id="L129">      throw new AssertionError(message);</span>
+    }
+<span class="fc" id="L131">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

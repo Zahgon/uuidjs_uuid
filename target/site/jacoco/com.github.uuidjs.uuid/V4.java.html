@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>V4.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">V4.java</span></div><h1>V4.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+import java.util.function.Supplier;
+
+/** Port of {@code src/v4.ts}. */
+public final class V4 {
+  private V4() {}
+
+  /**
+   * Stand-in for the ambient {@code crypto.randomUUID} used by the fast path:
+   *
+   * &lt;pre&gt;
+   * if (!buf &amp;amp;&amp;amp; !options &amp;amp;&amp;amp; crypto.randomUUID) {
+   *   return crypto.randomUUID();
+   * }
+   * &lt;/pre&gt;
+   *
+   * &lt;p&gt;Exposed as a swappable {@link Supplier} because the TS test suite replaces it
+   * with {@code t.mock.method(crypto, 'randomUUID', ...)} to assert that the fast
+   * path is taken for {@code v4()} but not for {@code v4({})}. {@link
+   * java.util.UUID#randomUUID()} is itself a compliant RFC 4122 v4 generator backed
+   * by a cryptographically strong PRNG, so it is the correct default.
+   */
+<span class="fc" id="L24">  static Supplier&lt;String&gt; randomUUID = () -&gt; java.util.UUID.randomUUID().toString();</span>
+
+  public static String v4() {
+<span class="fc" id="L27">    return v4((Version4Options) null);</span>
+  }
+
+  public static String v4(Version4Options options) {
+<span class="fc bfc" id="L31" title="All 2 branches covered.">    if (options == null) {</span>
+      // Fast path: no buf, no options -&gt; native randomUUID()
+<span class="fc" id="L33">      return randomUUID.get();</span>
+    }
+<span class="fc" id="L35">    return Stringify.unsafeStringify(v4Bytes(options, null, 0), 0);</span>
+  }
+
+  public static byte[] v4(Version4Options options, byte[] buf) {
+<span class="fc" id="L39">    return v4(options, buf, 0);</span>
+  }
+
+  public static byte[] v4(Version4Options options, byte[] buf, int offset) {
+<span class="fc" id="L43">    return v4Bytes(options, buf, offset);</span>
+  }
+
+  /** Mirrors the private {@code _v4(...)} tail-code function. */
+  private static byte[] v4Bytes(Version4Options options, byte[] buf, int offset) {
+<span class="fc bfc" id="L48" title="All 2 branches covered.">    if (options == null) {</span>
+<span class="fc" id="L49">      options = new Version4Options();</span>
+    }
+
+<span class="fc" id="L52">    byte[] rnds = coalesceRandom(options.random(), options.rng());</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">    if (rnds.length &lt; 16) {</span>
+<span class="fc" id="L54">      throw new JSError(&quot;Random bytes length must be &gt;= 16&quot;);</span>
+    }
+
+    // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`.
+    //
+    // NOTE: this mutates the caller's array in place when `options.random` was
+    // supplied. That side effect is observable (and relied upon by the upstream
+    // tests, whose `expectedBytes` fixture holds the post-mutation values), so it
+    // is preserved rather than defensively copied.
+<span class="fc" id="L63">    rnds[6] = (byte) ((rnds[6] &amp; 0x0f) | 0x40);</span>
+<span class="fc" id="L64">    rnds[8] = (byte) ((rnds[8] &amp; 0x3f) | 0x80);</span>
+
+    // Copy bytes to buffer, if provided
+<span class="fc bfc" id="L67" title="All 2 branches covered.">    if (buf != null) {</span>
+<span class="fc bfc" id="L68" title="All 4 branches covered.">      if (offset &lt; 0 || offset + 16 &gt; buf.length) {</span>
+<span class="fc" id="L69">        throw new JSRangeError(</span>
+            &quot;UUID byte range &quot; + offset + &quot;:&quot; + (offset + 15) + &quot; is out of buffer bounds&quot;);
+      }
+
+<span class="fc bfc" id="L73" title="All 2 branches covered.">      for (int i = 0; i &lt; 16; ++i) {</span>
+<span class="fc" id="L74">        buf[offset + i] = rnds[i];</span>
+      }
+
+<span class="fc" id="L77">      return buf;</span>
+    }
+
+<span class="fc" id="L80">    return rnds;</span>
+  }
+
+  private static byte[] coalesceRandom(byte[] random, Supplier&lt;byte[]&gt; rng) {
+<span class="fc bfc" id="L84" title="All 2 branches covered.">    if (random != null) {</span>
+<span class="fc" id="L85">      return random;</span>
+    }
+<span class="fc bfc" id="L87" title="All 2 branches covered.">    if (rng != null) {</span>
+<span class="fc" id="L88">      byte[] r = rng.get();</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">      if (r != null) {</span>
+<span class="fc" id="L90">        return r;</span>
+      }
+    }
+<span class="fc" id="L93">    return Rng.rng();</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

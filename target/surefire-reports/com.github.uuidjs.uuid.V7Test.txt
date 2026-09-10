@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.github.uuidjs.uuid.V7Test
+-------------------------------------------------------------------------------
+Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.053 s -- in com.github.uuidjs.uuid.V7Test

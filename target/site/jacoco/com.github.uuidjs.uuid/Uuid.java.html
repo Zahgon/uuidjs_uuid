@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Uuid.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">Uuid.java</span></div><h1>Uuid.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+/**
+ * Port of {@code src/index.ts} — the package's public surface.
+ *
+ * &lt;pre&gt;
+ * export { default as MAX } from './max.js';
+ * export { default as NIL } from './nil.js';
+ * export { default as parse } from './parse.js';
+ * export { default as stringify } from './stringify.js';
+ * export type * from './types.js';
+ * export { default as v1 } from './v1.js';
+ * export { default as v1ToV6 } from './v1ToV6.js';
+ * export { default as v3 } from './v3.js';
+ * export { default as v4 } from './v4.js';
+ * export { default as v5 } from './v5.js';
+ * export { default as v6 } from './v6.js';
+ * export { default as v6ToV1 } from './v6ToV1.js';
+ * export { default as v7 } from './v7.js';
+ * export { default as validate } from './validate.js';
+ * export { default as version } from './version.js';
+ * &lt;/pre&gt;
+ */
+public final class Uuid {
+  private Uuid() {}
+
+  public static final String MAX = Max.MAX;
+  public static final String NIL = Nil.NIL;
+
+  // --- parse / stringify ---
+
+  public static byte[] parse(Object uuid) {
+<span class="fc" id="L33">    return Parse.parse(uuid);</span>
+  }
+
+  public static String stringify(byte[] arr) {
+<span class="fc" id="L37">    return Stringify.stringify(arr);</span>
+  }
+
+  public static String stringify(byte[] arr, int offset) {
+<span class="fc" id="L41">    return Stringify.stringify(arr, offset);</span>
+  }
+
+  // --- validate / version ---
+
+  public static boolean validate(Object uuid) {
+<span class="fc" id="L47">    return Validate.validate(uuid);</span>
+  }
+
+  public static int version(Object uuid) {
+<span class="fc" id="L51">    return Version.version(uuid);</span>
+  }
+
+  // --- v1 ---
+
+  public static String v1() {
+<span class="fc" id="L57">    return V1.v1();</span>
+  }
+
+  public static String v1(Version1Options options) {
+<span class="fc" id="L61">    return V1.v1(options);</span>
+  }
+
+  public static byte[] v1(Version1Options options, byte[] buf) {
+<span class="fc" id="L65">    return V1.v1(options, buf);</span>
+  }
+
+  public static byte[] v1(Version1Options options, byte[] buf, int offset) {
+<span class="fc" id="L69">    return V1.v1(options, buf, offset);</span>
+  }
+
+  // --- v1 &lt;-&gt; v6 conversion ---
+
+  public static String v1ToV6(String uuid) {
+<span class="fc" id="L75">    return V1ToV6.v1ToV6(uuid);</span>
+  }
+
+  public static byte[] v1ToV6(byte[] uuid) {
+<span class="fc" id="L79">    return V1ToV6.v1ToV6(uuid);</span>
+  }
+
+  public static String v6ToV1(String uuid) {
+<span class="fc" id="L83">    return V6ToV1.v6ToV1(uuid);</span>
+  }
+
+  public static byte[] v6ToV1(byte[] uuid) {
+<span class="fc" id="L87">    return V6ToV1.v6ToV1(uuid);</span>
+  }
+
+  // --- v3 ---
+
+  public static String v3(String value, String namespace) {
+<span class="fc" id="L93">    return V3.v3(value, namespace);</span>
+  }
+
+  public static byte[] v3(String value, String namespace, byte[] buf) {
+<span class="fc" id="L97">    return V3.v3(value, namespace, buf);</span>
+  }
+
+  public static byte[] v3(String value, String namespace, byte[] buf, int offset) {
+<span class="fc" id="L101">    return V3.v3(value, namespace, buf, offset);</span>
+  }
+
+  // --- v4 ---
+
+  public static String v4() {
+<span class="fc" id="L107">    return V4.v4();</span>
+  }
+
+  public static String v4(Version4Options options) {
+<span class="fc" id="L111">    return V4.v4(options);</span>
+  }
+
+  public static byte[] v4(Version4Options options, byte[] buf) {
+<span class="fc" id="L115">    return V4.v4(options, buf);</span>
+  }
+
+  public static byte[] v4(Version4Options options, byte[] buf, int offset) {
+<span class="fc" id="L119">    return V4.v4(options, buf, offset);</span>
+  }
+
+  // --- v5 ---
+
+  public static String v5(String value, String namespace) {
+<span class="fc" id="L125">    return V5.v5(value, namespace);</span>
+  }
+
+  public static byte[] v5(String value, String namespace, byte[] buf) {
+<span class="fc" id="L129">    return V5.v5(value, namespace, buf);</span>
+  }
+
+  public static byte[] v5(String value, String namespace, byte[] buf, int offset) {
+<span class="fc" id="L133">    return V5.v5(value, namespace, buf, offset);</span>
+  }
+
+  // --- v6 ---
+
+  public static String v6() {
+<span class="fc" id="L139">    return V6.v6();</span>
+  }
+
+  public static String v6(Version1Options options) {
+<span class="fc" id="L143">    return V6.v6(options);</span>
+  }
+
+  public static byte[] v6(Version1Options options, byte[] buf) {
+<span class="fc" id="L147">    return V6.v6(options, buf);</span>
+  }
+
+  public static byte[] v6(Version1Options options, byte[] buf, int offset) {
+<span class="fc" id="L151">    return V6.v6(options, buf, offset);</span>
+  }
+
+  // --- v7 ---
+
+  public static String v7() {
+<span class="fc" id="L157">    return V7.v7();</span>
+  }
+
+  public static String v7(Version7Options options) {
+<span class="fc" id="L161">    return V7.v7(options);</span>
+  }
+
+  public static byte[] v7(Version7Options options, byte[] buf) {
+<span class="fc" id="L165">    return V7.v7(options, buf);</span>
+  }
+
+  public static byte[] v7(Version7Options options, byte[] buf, int offset) {
+<span class="fc" id="L169">    return V7.v7(options, buf, offset);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>V6.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">uuid</a> &gt; <a href="index.source.html" class="el_package">com.github.uuidjs.uuid</a> &gt; <span class="el_source">V6.java</span></div><h1>V6.java</h1><pre class="source lang-java linenums">package com.github.uuidjs.uuid;
+
+/** Port of {@code src/v6.ts}. */
+public final class V6 {
+  private V6() {}
+
+  public static String v6() {
+<span class="fc" id="L8">    return v6((Version1Options) null);</span>
+  }
+
+  public static String v6(Version1Options options) {
+<span class="fc" id="L12">    return Stringify.unsafeStringify(v6Bytes(options), 0);</span>
+  }
+
+  public static byte[] v6(Version1Options options, byte[] buf) {
+<span class="fc" id="L16">    return v6(options, buf, 0);</span>
+  }
+
+  public static byte[] v6(Version1Options options, byte[] buf, int offset) {
+<span class="fc" id="L20">    byte[] bytes = v6Bytes(options);</span>
+
+    // Return as a byte array if requested
+<span class="fc bfc" id="L23" title="All 2 branches covered.">    if (buf != null) {</span>
+<span class="fc bfc" id="L24" title="All 4 branches covered.">      if (offset &lt; 0 || offset + 16 &gt; buf.length) {</span>
+<span class="fc" id="L25">        throw new JSRangeError(</span>
+            &quot;UUID byte range &quot; + offset + &quot;:&quot; + (offset + 15) + &quot; is out of buffer bounds&quot;);
+      }
+
+<span class="fc bfc" id="L29" title="All 2 branches covered.">      for (int i = 0; i &lt; 16; i++) {</span>
+<span class="fc" id="L30">        buf[offset + i] = bytes[i];</span>
+      }
+<span class="fc" id="L32">      return buf;</span>
+    }
+
+<span class="fc" id="L35">    return bytes;</span>
+  }
+
+  /**
+   * Mirrors the shared body of the TS {@code v6()}:
+   *
+   * &lt;pre&gt;
+   * options ??= {};
+   * let bytes = v1({ ...options, _v6: true }, new Uint8Array(16));
+   * bytes = v1ToV6(bytes);
+   * &lt;/pre&gt;
+   *
+   * &lt;p&gt;v6 is v1 with a different field layout, so it starts from a v1 UUID — albeit
+   * with slightly different behavior around how the clock_seq and node fields are
+   * randomized, which is why v1 is called with {@code _v6: true}.
+   */
+  private static byte[] v6Bytes(Version1Options options) {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">    Version1Options merged = (options == null) ? new Version1Options() : options.copy();</span>
+<span class="fc" id="L53">    merged.v6(true);</span>
+
+<span class="fc" id="L55">    byte[] bytes = V1.generate(merged, new byte[16], 0);</span>
+
+    // Reorder the fields to v6 layout.
+<span class="fc" id="L58">    return V1ToV6.v1ToV6(bytes);</span>
+  }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.12.202403310830</span></div></body></html>
